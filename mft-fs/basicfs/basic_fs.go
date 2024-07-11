@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"golang.org/x/sys/unix"
 	"os"
 	"syscall"
 	"time"
@@ -99,10 +100,20 @@ func (fs BasicFS) fillAttributes(path string, attributes *fuseops.InodeAttribute
 
 	attributes.Mode = fileInfo.Mode()
 
-	attributes.Atime = time.Unix(stats.Atimespec.Sec, stats.Atimespec.Nsec)
+	var timeStats unix.Stat_t
+	e = unix.Stat(path, &timeStats)
+	if e != nil {
+		return e
+	}
+
+	/*attributes.Atime = time.Unix(stats.Atimespec.Sec, stats.Atimespec.Nsec)
 	attributes.Mtime = time.Unix(stats.Mtimespec.Sec, stats.Mtimespec.Nsec)
 	attributes.Ctime = time.Unix(stats.Ctimespec.Sec, stats.Ctimespec.Nsec)
-	attributes.Crtime = time.Unix(stats.Birthtimespec.Sec, stats.Birthtimespec.Nsec)
+	attributes.Crtime = time.Unix(stats.Birthtimespec.Sec, stats.Birthtimespec.Nsec)*/
+	attributes.Atime = time.Unix(timeStats.Atim.Sec, timeStats.Atim.Nsec)
+	attributes.Mtime = time.Unix(timeStats.Mtim.Sec, timeStats.Mtim.Nsec)
+	attributes.Ctime = time.Unix(timeStats.Ctim.Sec, timeStats.Ctim.Nsec)
+	attributes.Crtime = time.Unix(timeStats.Ctim.Sec, timeStats.Ctim.Nsec)
 
 	attributes.Uid = stats.Uid
 	attributes.Gid = stats.Gid
