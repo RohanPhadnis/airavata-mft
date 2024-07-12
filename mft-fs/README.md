@@ -6,33 +6,64 @@ MFT-FS is a FUSE-based extension to Airavata MFT. It provides the abstraction th
 
 <h3>Instructions</h3>
 
-<code>go.mod</code> (with <code>go.sum</code> file) file in the <code>mft-fs</code> directory
-
-To configure the mod and sum files:
-
 <ol>
-    <li>Make the <code>go.mod</code> file: <code>go mod init mft-fs</code></li>
-    <li>Install Dependencies
-        <ul>
-            <li><code>go get github.com/jacobsa/fuse</code></li>
-        </ul>
-    </li>
-</ol>
+<li><div>
 
+Code can be installed using
 
-To build the project, run the build command from the <code>main</code> subfolder:
+``` shell
+git clone https://github.com/RohanPhadnis/airavata-mft.git
+```
 
-<code>go build</code>
+Perform all the steps below from the <code>airavata-mft/mft-fs</code> directory.
+</div></li>
 
+<li>
+<div>
+To get the <code>go.mod</code> file ready, use the following command:
+
+``` shell
+cat gomod.txt > go.mod
+```
+</div>
+</li>
+
+<li>
+<div>
+To install all dependencies, run the following two commands:
+
+``` shell
+go mod tidy
+go install ./...
+```
+</div>
+</li>
+
+<li>
+<div>
 Before running, ensure you have the <code>mount</code> and <code>test</code> directories in the <code>main</code> directory.
 
-```
+``` shell
 mkdir mount
-mkdir test
+mkdir root
+```
+</div>
+</li>
+
+<li>
+<div>
+To run the project, use the command:
+
+``` shell
+go run ./main/main.go --mountDirectory ./mount --rootDirectory ./root
 ```
 
-Finally, run the executable file:
+This will mount the pass-through functions on the <code>./mount</code> directory. All operations will be computed and performed on <code>./root</code>
 
-<code>./main</code>
+</div>
+</li>
 
+<li><div>
 <strong>Important Final Step:</strong> Enjoy and report any bugs!
+</div></li>
+</ol>
