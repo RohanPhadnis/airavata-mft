@@ -28,13 +28,20 @@ The printer function prints messages to the terminal on behalf of FUSE operation
 func printer(message string) {
 	fmt.Println(message)
 
-	file, _ := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	/*file, _ := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer file.Close()
-	file.WriteString(fmt.Sprintf("%s\n", message))
+	file.WriteString(fmt.Sprintf("%s\n", message))*/
 }
 
 func expireTime() time.Time {
 	return time.Now().Add(time.Minute)
+}
+
+func minimum(a int64, b int64) int64 {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 type BasicFS struct {
@@ -736,7 +743,7 @@ func (fs BasicFS) ReadFile(ctx context.Context, op *fuseops.ReadFileOp) error {
 		if e != nil {
 			return e
 		}
-		op.BytesRead = int(min(int64(byteCount), op.Size))
+		op.BytesRead = int(minimum(int64(byteCount), op.Size))
 		for i := 0; i < op.BytesRead; i++ {
 			op.Dst[i] = buff[i] //append(op.Dst, buff[i])
 		}
