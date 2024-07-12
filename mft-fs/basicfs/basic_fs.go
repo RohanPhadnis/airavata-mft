@@ -739,12 +739,12 @@ func (fs BasicFS) ReadFile(ctx context.Context, op *fuseops.ReadFileOp) error {
 
 	if op.Dst != nil {
 		buff := make([]byte, op.Size)
-		byteCount, e := file.ReadAt(buff, op.Offset)
-		if e != nil {
+		byteCount, _ := file.ReadAt(buff, op.Offset)
+		/*if e != nil {
 			fmt.Println("got an error")
 			fmt.Println(fmt.Sprintf("read requested for: %v, at offset: %v", path, op.Offset))
 			return e
-		}
+		}*/
 		op.BytesRead = int(minimum(int64(byteCount), op.Size))
 		for i := 0; i < op.BytesRead; i++ {
 			op.Dst[i] = buff[i] //append(op.Dst, buff[i])
