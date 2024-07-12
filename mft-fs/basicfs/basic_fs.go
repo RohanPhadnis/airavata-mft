@@ -741,7 +741,8 @@ func (fs BasicFS) ReadFile(ctx context.Context, op *fuseops.ReadFileOp) error {
 		buff := make([]byte, op.Size)
 		byteCount, e := file.ReadAt(buff, op.Offset)
 		if e != nil {
-			fmt.Println("testing")
+			fmt.Println("got an error")
+			fmt.Println(fmt.Sprintf("read requested for: %v, at offset: %v", path, op.Offset))
 			return e
 		}
 		op.BytesRead = int(minimum(int64(byteCount), op.Size))
