@@ -6,6 +6,8 @@ MFT-FS is a FUSE-based extension to Airavata MFT. It provides the abstraction th
 
 <h3>Instructions</h3>
 
+The following instructions assume Go v1.20.x and FUSE are installed on the system.
+
 <ol>
 <li><div>
 
