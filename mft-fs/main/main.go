@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/jacobsa/fuse"
 	"github.com/jacobsa/fuse/fuseutil"
 	"log"
@@ -12,7 +13,12 @@ import (
 
 func main() {
 
-	manager := osfsmanager.NewOSFSManager("./test")
+	// reading commandline args
+	mountDirectory := flag.String("mountDirectory", "", "mount directory")
+	rootDirectory := flag.String("rootDirectory", "", "root directory")
+	flag.Parse()
+
+	manager := osfsmanager.NewOSFSManager(*rootDirectory)
 	fs, _ := abstractfs.NewAbstractFS(manager)
 	server := fuseutil.NewFileSystemServer(&fs)
 
@@ -22,7 +28,7 @@ func main() {
 		DebugLogger: log.New(os.Stderr, "fuse: ", 0),
 		ErrorLogger: log.New(os.Stderr, "fuse: ", 0),
 	}
-	mfs, err := fuse.Mount("./mount", server, cfg)
+	mfs, err := fuse.Mount(*mountDirectory, server, cfg)
 	if err != nil {
 		log.Fatalf("Mount: %v", err)
 	}
