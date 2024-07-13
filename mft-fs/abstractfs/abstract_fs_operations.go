@@ -255,6 +255,72 @@ func (fs AbstractFS) OpenDir(ctx context.Context, op *fuseops.OpenDirOp) error {
 	return nil
 }
 
+func (fs AbstractFS) ReadDir(ctx context.Context, op *fuseops.ReadDirOp) error {
+	printer("ReadDir")
+
+	info, e := fs.manager.GetInfo(op.Inode)
+	if e != nil {
+		return e
+	}
+	if info.DirentType != fuseutil.DT_Directory {
+		return fuse.ENOTDIR
+	}
+	if info.Handle != op.Handle {
+		return fuse.ENOENT
+	}
+
+	printer(fmt.Sprintf("Path: %v\tOffset: %v\n", info.Path, op.Offset))
+
+	//if fuseops.DirOffset(len(data)) < op.Offset {
+	//	return nil
+	//}
+
+	op.BytesRead = 0
+	bytesRead := 0
+	currentBytesRead := 0
+	buff := make([]byte, 1024)
+	for _, childInode := range info.Children {
+		dirent := fuseutil.Dirent{}
+		childInfo, e := fs.manager.GetInfo(childInode)
+		if e != nil {
+			return e
+		}
+		dirent.Inode = childInfo.Inode
+		dirent.Name = childInfo.Name
+		dirent.Type = childInfo.DirentType
+		dirent.Offset = fuseops.DirOffset(bytesRead)          // - op.Offset
+		currentBytesRead = fuseutil.WriteDirent(buff, dirent) //op.Dst[bytesRead:], dirent)
+		if bytesRead >= int(op.Offset) {
+			copy(op.Dst[op.BytesRead:], buff)
+			op.BytesRead += currentBytesRead
+			printer(fmt.Sprintf("Inode: %v\tName: %v\tOffset: %v\n", dirent.Inode, dirent.Name, dirent.Offset))
+		}
+		bytesRead += currentBytesRead
+	}
+
+	if int(op.Offset) >= bytesRead {
+		return nil
+	}
+
+	currentBytesRead = fuseutil.WriteDirent(op.Dst[op.BytesRead:], fuseutil.Dirent{
+		Offset: fuseops.DirOffset(bytesRead),
+		Name:   ".",
+		Type:   fuseutil.DT_Directory,
+		Inode:  op.Inode,
+	})
+	bytesRead += currentBytesRead
+	op.BytesRead += currentBytesRead
+
+	// op.Dst = op.Dst[op.Offset:]
+	// op.BytesRead = bytesRead - int(op.Offset)
+
+	printer(fmt.Sprintf("Bytes Read: %v\n", op.BytesRead))
+
+	fmt.Println("done")
+
+	return nil
+}
+
 func (fs AbstractFS) ReleaseDirHandle(ctx context.Context, op *fuseops.ReleaseDirHandleOp) error {
 	printer("ReleaseDirHandle")
 
