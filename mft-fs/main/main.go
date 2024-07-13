@@ -3,14 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
-	"log"
-	"os"
-
-	"mft-fs/basicfs"
-
 	"github.com/jacobsa/fuse"
 	"github.com/jacobsa/fuse/fuseutil"
+	"log"
+	"mft-fs/abstractfs"
+	"mft-fs/osfsmanager"
+	"os"
 )
 
 func main() {
@@ -20,10 +18,8 @@ func main() {
 	rootDirectory := flag.String("rootDirectory", "", "root directory")
 	flag.Parse()
 
-	fmt.Println(fmt.Sprintf("mountDirectory: %s, rootDirectory: %s", *mountDirectory, *rootDirectory))
-	// create an appropriate file system
-	// printer("started")
-	fs, _ := basicfs.NewBasicFS(*rootDirectory)
+	manager := osfsmanager.NewOSFSManager(*rootDirectory)
+	fs, _ := abstractfs.NewAbstractFS(manager)
 	server := fuseutil.NewFileSystemServer(&fs)
 
 	// mount the filesystem
