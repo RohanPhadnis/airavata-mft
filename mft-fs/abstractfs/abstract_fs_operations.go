@@ -351,15 +351,9 @@ func (fs AbstractFS) ReadFile(ctx context.Context, op *fuseops.ReadFileOp) error
 		return fuse.ENOENT
 	}
 
-	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file, false)
-	if e != nil {
-		return e
-	}
-
 	if op.Dst != nil {
 		buff := make([]byte, op.Size)
-		byteCount, _ := file.ReadAt(buff, op.Offset)
+		byteCount, _ := fs.manager.ReadAt(op.Inode, buff, op.Offset)
 		/*if e != nil {
 			return e
 		}*/
@@ -389,13 +383,7 @@ func (fs AbstractFS) WriteFile(ctx context.Context, op *fuseops.WriteFileOp) err
 		return fuse.ENOENT
 	}
 
-	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file, true)
-	if e != nil {
-		return e
-	}
-
-	_, e = file.WriteAt(op.Data, op.Offset)
+	_, e = fs.manager.WriteAt(op.Inode, op.Data, op.Offset)
 	if e != nil {
 		return e
 	}
@@ -414,13 +402,7 @@ func (fs AbstractFS) SyncFile(ctx context.Context, op *fuseops.SyncFileOp) error
 		return fuse.ENOENT
 	}
 
-	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file, false)
-	if e != nil {
-		return e
-	}
-
-	return fs.manager.SyncFile(op.Inode, file)
+	return fs.manager.SyncFile(op.Inode)
 }
 
 func (fs AbstractFS) FlushFile(ctx context.Context, op *fuseops.FlushFileOp) error {
@@ -434,13 +416,7 @@ func (fs AbstractFS) FlushFile(ctx context.Context, op *fuseops.FlushFileOp) err
 		return fuse.ENOENT
 	}
 
-	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file, false)
-	if e != nil {
-		return e
-	}
-
-	return fs.manager.SyncFile(op.Inode, file)
+	return fs.manager.SyncFile(op.Inode)
 }
 
 func (fs AbstractFS) ReleaseFileHandle(ctx context.Context, op *fuseops.ReleaseFileHandleOp) error {

@@ -18,9 +18,9 @@ type FSManager interface {
 	CreateFile(parent fuseops.InodeID, name string, mode os.FileMode) (fuseops.InodeID, error)
 	RmDir(inode fuseops.InodeID) error
 	DeleteHandle(handle fuseops.HandleID)
-	GetFile(inode fuseops.InodeID) (*os.File, error)
-	CloseFile(inode fuseops.InodeID, file *os.File, write bool)
-	SyncFile(inode fuseops.InodeID, file *os.File) error
+	SyncFile(inode fuseops.InodeID) error
+	WriteAt(inode fuseops.InodeID, data []byte, off int64) (n int, err error)
+	ReadAt(inode fuseops.InodeID, data []byte, off int64) (n int, err error)
 }
 
 type FileInfo struct {
