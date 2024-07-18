@@ -301,22 +301,51 @@ func (manager *OSFSManager) DeleteHandle(handle fuseops.HandleID) {
 	delete(manager.handleToInode, handle)
 }
 
-func (manager *OSFSManager) GetFile(inode fuseops.InodeID) (*os.File, error) {
+func (manager *OSFSManager) SyncFile(inode fuseops.InodeID) error {
 	info, e := manager.GetInfo(inode)
 	if e != nil {
-		return nil, e
+		return e
 	}
 	file, e := os.OpenFile(info.Path, os.O_RDWR, info.Mode)
 	if e != nil {
-		return nil, e
+		return e
 	}
-	return file, nil
+	defer file.Close()
+	e = file.Sync()
+	if e != nil {
+		return e
+	}
+	return nil
 }
 
-func (manager *OSFSManager) CloseFile(inode fuseops.InodeID, file *os.File, write bool) {
-	file.Close()
+func (manager *OSFSManager) ReadAt(inode fuseops.InodeID, data []byte, off int64) (int, error) {
+	info, e := manager.GetInfo(inode)
+	if e != nil {
+		return 0, e
+	}
+
+	file, e := os.OpenFile(info.Path, os.O_RDWR, info.Mode)
+	if e != nil {
+		return 0, e
+	}
+	defer file.Close()
+
+	n, e := file.ReadAt(data, off)
+	return n, e
 }
 
-func (manager *OSFSManager) SyncFile(inode fuseops.InodeID, file *os.File) error {
-	return file.Sync()
+func (manager *OSFSManager) WriteAt(inode fuseops.InodeID, data []byte, off int64) (int, error) {
+	info, e := manager.GetInfo(inode)
+	if e != nil {
+		return 0, e
+	}
+
+	file, e := os.OpenFile(info.Path, os.O_RDWR, info.Mode)
+	if e != nil {
+		return 0, e
+	}
+	defer file.Close()
+
+	n, e := file.WriteAt(data, off)
+	return n, e
 }
