@@ -19,7 +19,7 @@ type FSManager interface {
 	RmDir(inode fuseops.InodeID) error
 	DeleteHandle(handle fuseops.HandleID)
 	GetFile(inode fuseops.InodeID) (*os.File, error)
-	CloseFile(inode fuseops.InodeID, file *os.File)
+	CloseFile(inode fuseops.InodeID, file *os.File, write bool)
 	SyncFile(inode fuseops.InodeID, file *os.File) error
 }
 
@@ -41,6 +41,9 @@ type FileInfo struct {
 	Gid              uint32
 	DirentType       fuseutil.DirentType
 	Handle           fuseops.HandleID
+	Cache            bool
+	CacheTime        time.Time
+	WriteTime        time.Time
 }
 
 func NewFileInfo(name string, path string, inode fuseops.InodeID, parent fuseops.InodeID, direntType fuseutil.DirentType) FileInfo {
@@ -52,5 +55,8 @@ func NewFileInfo(name string, path string, inode fuseops.InodeID, parent fuseops
 		Inode:            inode,
 		Path:             path,
 		DirentType:       direntType,
+		Cache:            false,
+		CacheTime:        time.Unix(0, 0),
+		WriteTime:        time.Now(),
 	}
 }

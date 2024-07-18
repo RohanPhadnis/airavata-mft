@@ -352,7 +352,7 @@ func (fs AbstractFS) ReadFile(ctx context.Context, op *fuseops.ReadFileOp) error
 	}
 
 	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file)
+	defer fs.manager.CloseFile(op.Inode, file, false)
 	if e != nil {
 		return e
 	}
@@ -390,7 +390,7 @@ func (fs AbstractFS) WriteFile(ctx context.Context, op *fuseops.WriteFileOp) err
 	}
 
 	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file)
+	defer fs.manager.CloseFile(op.Inode, file, true)
 	if e != nil {
 		return e
 	}
@@ -415,7 +415,7 @@ func (fs AbstractFS) SyncFile(ctx context.Context, op *fuseops.SyncFileOp) error
 	}
 
 	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file)
+	defer fs.manager.CloseFile(op.Inode, file, false)
 	if e != nil {
 		return e
 	}
@@ -435,7 +435,7 @@ func (fs AbstractFS) FlushFile(ctx context.Context, op *fuseops.FlushFileOp) err
 	}
 
 	file, e := fs.manager.GetFile(op.Inode)
-	defer fs.manager.CloseFile(op.Inode, file)
+	defer fs.manager.CloseFile(op.Inode, file, false)
 	if e != nil {
 		return e
 	}

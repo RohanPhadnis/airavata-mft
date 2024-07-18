@@ -313,7 +313,7 @@ func (manager *OSFSManager) GetFile(inode fuseops.InodeID) (*os.File, error) {
 	return file, nil
 }
 
-func (manager *OSFSManager) CloseFile(inode fuseops.InodeID, file *os.File) {
+func (manager *OSFSManager) CloseFile(inode fuseops.InodeID, file *os.File, write bool) {
 	file.Close()
 }
 
