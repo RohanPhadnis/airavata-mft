@@ -6,7 +6,6 @@ import (
 	"github.com/jacobsa/fuse"
 	"github.com/jacobsa/fuse/fuseops"
 	"github.com/jacobsa/fuse/fuseutil"
-	"os"
 	"time"
 )
 
@@ -22,9 +21,9 @@ The printer function prints messages to the terminal on behalf of FUSE operation
 func printer(message string) {
 	fmt.Println(message)
 
-	file, _ := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	/*file, _ := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer file.Close()
-	file.WriteString(fmt.Sprintf("%s\n", message))
+	file.WriteString(fmt.Sprintf("%s\n", message))*/
 }
 
 func minimum(a int64, b int64) int64 {

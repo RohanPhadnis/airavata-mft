@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/jacobsa/fuse/fuseops"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"mft-fs/abstractfs"
 	"mft-fs/remotefs/remotefscomms"
@@ -14,29 +13,13 @@ import (
 
 type ClientManager struct {
 	abstractfs.FSManager
-	conn   *grpc.ClientConn
 	client remotefscomms.RemoteFSCommsClient
 }
 
-func NewClientManager() (*ClientManager, error) {
+func NewClientManager(conn *grpc.ClientConn) (*ClientManager, error) {
 	output := &ClientManager{}
-	e := output.init()
-	if e != nil {
-		return nil, e
-	}
+	output.client = remotefscomms.NewRemoteFSCommsClient(conn)
 	return output, nil
-}
-
-func (manager *ClientManager) init() error {
-	var opts []grpc.DialOption
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	var e error
-	manager.conn, e = grpc.NewClient("http://localhost:8000", opts...)
-	if e != nil {
-		return e
-	}
-	manager.client = remotefscomms.NewRemoteFSCommsClient(manager.conn)
-	return nil
 }
 
 func (manager *ClientManager) GetSize() (uint64, error) {
@@ -62,7 +45,9 @@ func (manager *ClientManager) GetInfo(inode fuseops.InodeID) (*abstractfs.FileIn
 	if e != nil {
 		return nil, e
 	}
-	output := &abstractfs.FileInfo{}
+	output := &abstractfs.FileInfo{
+		ChildrenIndexMap: make(map[string]int),
+	}
 	remotefscomms.ConvertFromComm(resp, output)
 	return output, nil
 }
@@ -174,5 +159,5 @@ func (manager *ClientManager) ReadAt(inode fuseops.InodeID, data []byte, off int
 }
 
 func (manager *ClientManager) Destroy() error {
-	return manager.conn.Close()
+	return nil
 }
