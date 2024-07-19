@@ -84,14 +84,19 @@ func (fs AbstractFS) StatFS(ctx context.Context, op *fuseops.StatFSOp) error {
 
 	op.BlockSize = 4096
 
+	size, e := fs.manager.GetSize()
 	op.Blocks = 64
-	op.BlocksFree = uint64(64 - uint32(fs.manager.GetSize())/op.BlockSize)
+	op.BlocksFree = uint64(64 - uint32(size)/op.BlockSize)
 	op.BlocksAvailable = op.BlocksFree
 
 	op.IoSize = 4096
 
 	op.Inodes = 128
-	op.InodesFree = op.Inodes - fs.manager.GetLength()
+	length, e := fs.manager.GetLength()
+	if e != nil {
+		return e
+	}
+	op.InodesFree = op.Inodes - length
 
 	return nil
 }
@@ -324,9 +329,7 @@ func (fs AbstractFS) ReadDir(ctx context.Context, op *fuseops.ReadDirOp) error {
 func (fs AbstractFS) ReleaseDirHandle(ctx context.Context, op *fuseops.ReleaseDirHandleOp) error {
 	printer("ReleaseDirHandle")
 
-	fs.manager.DeleteHandle(op.Handle)
-
-	return nil
+	return fs.manager.DeleteHandle(op.Handle)
 }
 
 func (fs AbstractFS) OpenFile(ctx context.Context, op *fuseops.OpenFileOp) error {
@@ -422,12 +425,11 @@ func (fs AbstractFS) FlushFile(ctx context.Context, op *fuseops.FlushFileOp) err
 func (fs AbstractFS) ReleaseFileHandle(ctx context.Context, op *fuseops.ReleaseFileHandleOp) error {
 	printer("ReleaseFileHandle")
 
-	fs.manager.DeleteHandle(op.Handle)
-
-	return nil
+	return fs.manager.DeleteHandle(op.Handle)
 }
 
 func (fs AbstractFS) Destroy() {
 	printer("Destroy")
+	fs.manager.Destroy()
 	fuse.Unmount("./mount")
 }
