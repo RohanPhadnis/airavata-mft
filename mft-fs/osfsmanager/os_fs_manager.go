@@ -145,13 +145,13 @@ func (manager *OSFSManager) updateInfo(info *abstractfs.FileInfo) error {
 	return nil
 }
 
-func (manager *OSFSManager) GetSize() uint64 {
+func (manager *OSFSManager) GetSize() (uint64, error) {
 	stat, _ := os.Stat(manager.root)
-	return uint64(stat.Size())
+	return uint64(stat.Size()), nil
 }
 
-func (manager *OSFSManager) GetLength() uint64 {
-	return uint64(len(manager.inodeInfo))
+func (manager *OSFSManager) GetLength() (uint64, error) {
+	return uint64(len(manager.inodeInfo)), nil
 }
 
 func (manager *OSFSManager) GetInfo(inode fuseops.InodeID) (*abstractfs.FileInfo, error) {
@@ -297,8 +297,9 @@ func (manager *OSFSManager) Delete(inode fuseops.InodeID) error {
 	return nil
 }
 
-func (manager *OSFSManager) DeleteHandle(handle fuseops.HandleID) {
+func (manager *OSFSManager) DeleteHandle(handle fuseops.HandleID) error {
 	delete(manager.handleToInode, handle)
+	return nil
 }
 
 func (manager *OSFSManager) SyncFile(inode fuseops.InodeID) error {
@@ -349,3 +350,5 @@ func (manager *OSFSManager) WriteAt(inode fuseops.InodeID, data []byte, off int6
 	n, e := file.WriteAt(data, off)
 	return n, e
 }
+
+func (manager *OSFSManager) Destroy() error { return nil }

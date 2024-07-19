@@ -8,8 +8,8 @@ import (
 )
 
 type FSManager interface {
-	GetSize() uint64
-	GetLength() uint64
+	GetSize() (uint64, error)
+	GetLength() (uint64, error)
 	GetInfo(id fuseops.InodeID) (*FileInfo, error)
 	SetInfo(id fuseops.InodeID, uidptr *uint32, gidptr *uint32, sizeptr *uint64, modeptr *os.FileMode, atimeptr *time.Time, mtimeptr *time.Time) error
 	Delete(inode fuseops.InodeID) error
@@ -17,10 +17,11 @@ type FSManager interface {
 	GenerateHandle(id fuseops.InodeID) (fuseops.HandleID, error)
 	CreateFile(parent fuseops.InodeID, name string, mode os.FileMode) (fuseops.InodeID, error)
 	RmDir(inode fuseops.InodeID) error
-	DeleteHandle(handle fuseops.HandleID)
+	DeleteHandle(handle fuseops.HandleID) error
 	SyncFile(inode fuseops.InodeID) error
 	WriteAt(inode fuseops.InodeID, data []byte, off int64) (n int, err error)
 	ReadAt(inode fuseops.InodeID, data []byte, off int64) (n int, err error)
+	Destroy() error
 }
 
 type FileInfo struct {
