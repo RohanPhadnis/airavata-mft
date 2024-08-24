@@ -4,7 +4,7 @@
 // - protoc             v5.27.1
 // source: comm.proto
 
-package remotefscomms
+package safe_remotefscomms
 
 import (
 	context "context"

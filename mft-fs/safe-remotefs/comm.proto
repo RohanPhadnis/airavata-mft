@@ -1,5 +1,5 @@
 syntax = "proto3";
-package remotefscomms;
+package safe_remotefscomms;
 
 option go_package="./safe-remotefscomms";
 

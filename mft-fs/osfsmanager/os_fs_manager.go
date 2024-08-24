@@ -104,13 +104,6 @@ func (manager *OSFSManager) GenerateHandle(inode fuseops.InodeID) (fuseops.Handl
 	return handle, nil
 }
 
-/*
-
-todo
-	update
-	fillAttributes
-*/
-
 func (manager *OSFSManager) updateInfo(info *abstractfs.FileInfo) error {
 
 	fileInfo, e := os.Stat(info.Path)
