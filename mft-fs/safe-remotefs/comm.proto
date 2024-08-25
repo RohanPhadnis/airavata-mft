@@ -48,13 +48,23 @@ message UintMsg {
 
 /*
 Sending file contents
-  - ReadAt
   - WriteAt
 */
-message ContentMsg {
+message WriteAtMsg {
   uint64 inode = 1;
   bytes data = 2;
   int64 off = 3;
+}
+
+message ReadAtMsg {
+  uint64 inode = 1;
+  int64 size = 2;
+  int64 off = 3;
+}
+
+message ReadAtResponseMsg {
+  int64 n = 1;
+  bytes data = 2;
 }
 
 /*
@@ -82,6 +92,35 @@ message MkInodeMsg {
   uint32 mode = 3;
 }
 
+/*
+RequestResourceMsg
+  - RequestRead
+  - RequestWrite
+ */
+message RequestResourceMsg {
+  uint64 inode = 1;
+  bool cache = 2;
+  google.protobuf.Timestamp cacheTime = 3;
+}
+
+/*
+RequestResponseMsg
+  - RequestRead
+  - RequestWrite
+ */
+message RequestResponseMsg {
+  bool success = 1;
+}
+
+/*
+AckResponseMsg
+  - AckRead
+  - AckWrite
+ */
+message AckResponseMsg {
+  google.protobuf.Timestamp writeTime = 1;
+}
+
 /*Empty Message*/
 message Empty {}
 
@@ -92,11 +131,13 @@ service RemoteFSComms {
   rpc SetInfoComm(SetInfoParamsMsg) returns (Empty) {}
   rpc DeleteComm(UintMsg) returns (Empty) {}
   rpc MkDirComm(MkInodeMsg) returns (UintMsg) {}
-  rpc GenerateHandleComm(UintMsg) returns (UintMsg) {}
   rpc CreateFileComm(MkInodeMsg) returns (UintMsg) {}
   rpc RmDirComm(UintMsg) returns (Empty) {}
-  rpc DeleteHandleComm(UintMsg) returns (Empty) {}
   rpc SyncFileComm(UintMsg) returns (Empty) {}
-  rpc WriteAtComm(ContentMsg) returns (UintMsg) {}
-  rpc ReadAtComm(ContentMsg) returns (UintMsg) {}
+  rpc WriteAtComm(WriteAtMsg) returns (UintMsg) {}
+  rpc ReadAtComm(ReadAtMsg) returns (ReadAtResponseMsg) {}
+  rpc RequestReadComm(RequestResourceMsg) returns (RequestResponseMsg) {}
+  rpc RequestWriteComm(RequestResourceMsg) returns (RequestResponseMsg) {}
+  rpc AckReadComm(UintMsg) returns (AckResponseMsg) {}
+  rpc AckWriteComm(UintMsg) returns (AckResponseMsg) {}
 }

@@ -2,6 +2,9 @@ package client
 
 import (
 	"context"
+	"crypto/rand"
+	"errors"
+	"fmt"
 	"github.com/jacobsa/fuse/fuseops"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -11,13 +14,33 @@ import (
 	"time"
 )
 
-type ClientManager struct {
-	abstractfs.FSManager
-	client safe_remotefscomms.RemoteFSCommsClient
+type cacheInfo struct {
+	cache     bool
+	cacheTime time.Time
+	handle    fuseops.HandleID
 }
 
-func NewClientManager(conn *grpc.ClientConn) (*ClientManager, error) {
-	output := &ClientManager{}
+func newCacheInfo() *cacheInfo {
+	return &cacheInfo{
+		cache:     false,
+		cacheTime: time.Unix(0, 0),
+		handle:    fuseops.HandleID(0),
+	}
+}
+
+type ClientManager struct {
+	abstractfs.FSManager
+	client        safe_remotefscomms.RemoteFSCommsClient
+	cachePath     string
+	localInfo     map[fuseops.InodeID]*cacheInfo
+	handleToInode map[fuseops.HandleID]fuseops.InodeID
+}
+
+func NewClientManager(conn *grpc.ClientConn, cachePath string) (*ClientManager, error) {
+	output := &ClientManager{
+		cachePath: cachePath,
+		localInfo: make(map[fuseops.InodeID]*cacheInfo),
+	}
 	output.client = safe_remotefscomms.NewRemoteFSCommsClient(conn)
 	return output, nil
 }
@@ -49,6 +72,10 @@ func (manager *ClientManager) GetInfo(inode fuseops.InodeID) (*abstractfs.FileIn
 		ChildrenIndexMap: make(map[string]int),
 	}
 	safe_remotefscomms.ConvertFromComm(resp, output)
+	info, ok := manager.localInfo[inode]
+	if ok {
+		output.Handle = info.handle
+	}
 	return output, nil
 }
 
@@ -102,11 +129,28 @@ func (manager *ClientManager) MkDir(parent fuseops.InodeID, name string, mode os
 }
 
 func (manager *ClientManager) GenerateHandle(inode fuseops.InodeID) (fuseops.HandleID, error) {
-	resp, e := manager.client.GenerateHandleComm(context.Background(), &safe_remotefscomms.UintMsg{Data: uint64(inode)})
+	var buff [8]byte
+	_, e := rand.Read(buff[:])
 	if e != nil {
 		return 0, e
 	}
-	return fuseops.HandleID(resp.Data), nil
+	var output uint64 = 0
+	for i := 0; i < len(buff); i++ {
+		output = output | uint64(buff[i]<<(8*i))
+	}
+	handle := fuseops.HandleID(output)
+	_, ok := manager.handleToInode[handle]
+	if ok {
+		return manager.GenerateHandle(inode)
+	}
+	info, ok := manager.localInfo[inode]
+	if !ok {
+		manager.localInfo[inode] = newCacheInfo()
+		info = manager.localInfo[inode]
+	}
+	info.handle = handle
+	manager.handleToInode[handle] = inode
+	return handle, nil
 }
 func (manager *ClientManager) CreateFile(parent fuseops.InodeID, name string, mode os.FileMode) (fuseops.InodeID, error) {
 	resp, e := manager.client.CreateFileComm(context.Background(), &safe_remotefscomms.MkInodeMsg{
@@ -126,8 +170,8 @@ func (manager *ClientManager) RmDir(inode fuseops.InodeID) error {
 }
 
 func (manager *ClientManager) DeleteHandle(handle fuseops.HandleID) error {
-	_, e := manager.client.DeleteHandleComm(context.Background(), &safe_remotefscomms.UintMsg{Data: uint64(handle)})
-	return e
+	delete(manager.handleToInode, handle)
+	return nil
 }
 
 func (manager *ClientManager) SyncFile(inode fuseops.InodeID) error {
@@ -136,26 +180,110 @@ func (manager *ClientManager) SyncFile(inode fuseops.InodeID) error {
 }
 
 func (manager *ClientManager) WriteAt(inode fuseops.InodeID, data []byte, off int64) (n int, err error) {
-	resp, e := manager.client.WriteAtComm(context.Background(), &safe_remotefscomms.ContentMsg{
-		Inode: uint64(inode),
-		Data:  data,
-		Off:   off,
-	})
+
+	info, ok := manager.localInfo[inode]
+	if !ok {
+		return 0, errors.New("local cache not updated")
+	}
+
+	msg := safe_remotefscomms.RequestResourceMsg{
+		CacheTime: timestamppb.New(time.Unix(0, 0)),
+		Inode:     uint64(inode),
+		Cache:     info.cache,
+	}
+
+	requestResp, e := manager.client.RequestWriteComm(context.Background(), &msg)
 	if e != nil {
 		return 0, e
 	}
-	return int(resp.Data), nil
+
+	if requestResp.Success {
+		resp, e := manager.client.WriteAtComm(context.Background(), &safe_remotefscomms.WriteAtMsg{
+			Inode: uint64(inode),
+			Data:  data,
+			Off:   off,
+		})
+		if e != nil {
+			return 0, e
+		}
+
+		ackResp, e := manager.client.AckWriteComm(context.Background(), &safe_remotefscomms.UintMsg{Data: uint64(inode)})
+		if e != nil {
+			return 0, e
+		}
+
+		manager.localInfo[inode].cacheTime = ackResp.WriteTime.AsTime()
+
+		file, e := os.OpenFile(fmt.Sprintf("%s/file%d.txt", manager.cachePath, int(inode)), os.O_RDWR|os.O_CREATE, 777)
+		if e != nil {
+			return 0, e
+		}
+		_, e = file.WriteAt(data, off)
+		if e != nil {
+			return 0, e
+		}
+
+		return int(resp.Data), nil
+	}
+
+	return 0, errors.New("local cache not updated")
 }
 func (manager *ClientManager) ReadAt(inode fuseops.InodeID, data []byte, off int64) (n int, err error) {
-	resp, e := manager.client.ReadAtComm(context.Background(), &safe_remotefscomms.ContentMsg{
-		Inode: uint64(inode),
-		Data:  data,
-		Off:   off,
-	})
+
+	msg := safe_remotefscomms.RequestResourceMsg{
+		CacheTime: timestamppb.New(time.Unix(0, 0)),
+		Inode:     uint64(inode),
+		Cache:     false,
+	}
+
+	info, ok := manager.localInfo[inode]
+	if ok {
+		msg.Cache = info.cache
+		msg.CacheTime = timestamppb.New(info.cacheTime)
+	} else {
+		manager.localInfo[inode] = newCacheInfo()
+	}
+
+	requestResp, e := manager.client.RequestReadComm(context.Background(), &msg)
 	if e != nil {
 		return 0, e
 	}
-	return int(resp.Data), nil
+
+	if requestResp.Success {
+		resp, e := manager.client.ReadAtComm(context.Background(), &safe_remotefscomms.ReadAtMsg{
+			Inode: uint64(inode),
+			Size:  int64(len(data)),
+			Off:   off,
+		})
+		if e != nil {
+			return 0, e
+		}
+		ackResp, e := manager.client.AckReadComm(context.Background(), &safe_remotefscomms.UintMsg{Data: uint64(inode)})
+		if e != nil {
+			return 0, e
+		}
+		manager.localInfo[inode].cacheTime = ackResp.WriteTime.AsTime()
+		manager.localInfo[inode].cache = true
+		for i := 0; i < min(len(data), len(resp.Data)); i++ {
+			data[i] = resp.Data[i]
+		}
+		file, e := os.OpenFile(fmt.Sprintf("%s/file%d.txt", manager.cachePath, int(inode)), os.O_RDWR|os.O_CREATE, 777)
+		if e != nil {
+			return 0, e
+		}
+		_, e = file.WriteAt(data, off)
+		if e != nil {
+			return 0, e
+		}
+		return int(resp.N), nil
+	} else {
+		file, e := os.OpenFile(fmt.Sprintf("%s/file%d.txt", manager.cachePath, int(inode)), os.O_RDWR, 777)
+		if e != nil {
+			return 0, e
+		}
+		n, _ := file.ReadAt(data, off)
+		return n, nil
+	}
 }
 
 func (manager *ClientManager) Destroy() error {

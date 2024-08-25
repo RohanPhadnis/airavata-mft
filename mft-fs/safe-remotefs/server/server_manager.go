@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"github.com/jacobsa/fuse/fuseops"
-	"mft-fs/osfsmanager"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"mft-fs/safe-remotefs/safe-remotefscomms"
 	"os"
 	"time"
@@ -11,12 +11,12 @@ import (
 
 type Server struct {
 	safe_remotefscomms.UnimplementedRemoteFSCommsServer
-	manager *osfsmanager.OSFSManager
+	manager *SafeOSFSManager
 }
 
 func NewServerHandler(root string) *Server {
 	output := &Server{
-		manager: osfsmanager.NewOSFSManager(root),
+		manager: NewSafeOSFSManager(root),
 	}
 	return output
 }
@@ -97,14 +97,6 @@ func (server *Server) MkDirComm(ctx context.Context, in *safe_remotefscomms.MkIn
 	return &safe_remotefscomms.UintMsg{Data: uint64(inode)}, nil
 }
 
-func (server *Server) GenerateHandleComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.UintMsg, error) {
-	handle, e := server.manager.GenerateHandle(fuseops.InodeID(in.Data))
-	if e != nil {
-		return nil, e
-	}
-	return &safe_remotefscomms.UintMsg{Data: uint64(handle)}, nil
-}
-
 func (server *Server) CreateFileComm(ctx context.Context, in *safe_remotefscomms.MkInodeMsg) (*safe_remotefscomms.UintMsg, error) {
 	inode, e := server.manager.CreateFile(fuseops.InodeID(in.Parent), in.Name, os.FileMode(in.Mode))
 	if e != nil {
@@ -121,14 +113,6 @@ func (server *Server) RmDirComm(ctx context.Context, in *safe_remotefscomms.Uint
 	return &safe_remotefscomms.Empty{}, nil
 }
 
-func (server *Server) DeleteHandleComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.Empty, error) {
-	e := server.manager.DeleteHandle(fuseops.HandleID(in.Data))
-	if e != nil {
-		return nil, e
-	}
-	return &safe_remotefscomms.Empty{}, nil
-}
-
 func (server *Server) SyncFileComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.Empty, error) {
 	e := server.manager.SyncFile(fuseops.InodeID(in.Data))
 	if e != nil {
@@ -137,12 +121,48 @@ func (server *Server) SyncFileComm(ctx context.Context, in *safe_remotefscomms.U
 	return &safe_remotefscomms.Empty{}, nil
 }
 
-func (server *Server) WriteAtComm(ctx context.Context, in *safe_remotefscomms.ContentMsg) (*safe_remotefscomms.UintMsg, error) {
+func (server *Server) WriteAtComm(ctx context.Context, in *safe_remotefscomms.WriteAtMsg) (*safe_remotefscomms.UintMsg, error) {
 	n, _ := server.manager.WriteAt(fuseops.InodeID(in.Inode), in.Data, in.Off)
 	return &safe_remotefscomms.UintMsg{Data: uint64(n)}, nil
 }
 
-func (server *Server) ReadAtComm(ctx context.Context, in *safe_remotefscomms.ContentMsg) (*safe_remotefscomms.UintMsg, error) {
-	n, _ := server.manager.ReadAt(fuseops.InodeID(in.Inode), in.Data, in.Off)
-	return &safe_remotefscomms.UintMsg{Data: uint64(n)}, nil
+func (server *Server) ReadAtComm(ctx context.Context, in *safe_remotefscomms.ReadAtMsg) (*safe_remotefscomms.ReadAtResponseMsg, error) {
+	data := make([]byte, in.Size)
+	n, _ := server.manager.ReadAt(fuseops.InodeID(in.Inode), data, in.Off)
+	return &safe_remotefscomms.ReadAtResponseMsg{
+		Data: data,
+		N:    int64(n),
+	}, nil
+}
+
+func (server *Server) RequestReadComm(ctx context.Context, in *safe_remotefscomms.RequestResourceMsg) (*safe_remotefscomms.RequestResponseMsg, error) {
+	success, e := server.manager.RequestRead(fuseops.InodeID(in.Inode), in.Cache, in.CacheTime.AsTime())
+	if e != nil {
+		return nil, e
+	}
+	return &safe_remotefscomms.RequestResponseMsg{Success: success}, nil
+}
+
+func (server *Server) RequestWriteComm(ctx context.Context, in *safe_remotefscomms.RequestResourceMsg) (*safe_remotefscomms.RequestResponseMsg, error) {
+	success, e := server.manager.RequestWrite(fuseops.InodeID(in.Inode), in.Cache, in.CacheTime.AsTime())
+	if e != nil {
+		return nil, e
+	}
+	return &safe_remotefscomms.RequestResponseMsg{Success: success}, nil
+}
+
+func (server *Server) AckReadComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.AckResponseMsg, error) {
+	timestamp, e := server.manager.AckRead(fuseops.InodeID(in.Data))
+	if e != nil {
+		return nil, e
+	}
+	return &safe_remotefscomms.AckResponseMsg{WriteTime: timestamppb.New(timestamp)}, nil
+}
+
+func (server *Server) AckWriteComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.AckResponseMsg, error) {
+	timestamp, e := server.manager.AckWrite(fuseops.InodeID(in.Data))
+	if e != nil {
+		return nil, e
+	}
+	return &safe_remotefscomms.AckResponseMsg{WriteTime: timestamppb.New(timestamp)}, nil
 }

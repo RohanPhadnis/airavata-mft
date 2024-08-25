@@ -3,6 +3,7 @@ package abstractfs
 import (
 	"github.com/jacobsa/fuse/fuseops"
 	"github.com/jacobsa/fuse/fuseutil"
+	"mft-fs/datastructures"
 	"os"
 	"time"
 )
@@ -25,26 +26,29 @@ type FSManager interface {
 }
 
 type FileInfo struct {
-	Name             string
-	Path             string
-	Inode            fuseops.InodeID
-	Children         []fuseops.InodeID
-	ChildrenIndexMap map[string]int
-	Parent           fuseops.InodeID
-	Nlink            uint32
-	Size             uint64
-	Mode             os.FileMode
-	Atime            time.Time
-	Mtime            time.Time
-	Ctime            time.Time
-	Crtime           time.Time
-	Uid              uint32
-	Gid              uint32
-	DirentType       fuseutil.DirentType
-	Handle           fuseops.HandleID
-	Cache            bool
-	CacheTime        time.Time
-	WriteTime        time.Time
+	Name              string
+	Path              string
+	Inode             fuseops.InodeID
+	Children          []fuseops.InodeID
+	ChildrenIndexMap  map[string]int
+	Parent            fuseops.InodeID
+	Nlink             uint32
+	Size              uint64
+	Mode              os.FileMode
+	Atime             time.Time
+	Mtime             time.Time
+	Ctime             time.Time
+	Crtime            time.Time
+	Uid               uint32
+	Gid               uint32
+	DirentType        fuseutil.DirentType
+	Handle            fuseops.HandleID
+	Cache             bool
+	CacheTime         time.Time
+	MetadataWriteTime time.Time
+	ContentWriteTime  time.Time
+	MetadataLock      *datastructures.CREWResource
+	ContentLock       *datastructures.CREWResource
 }
 
 func NewFileInfo(name string, path string, inode fuseops.InodeID, parent fuseops.InodeID, direntType fuseutil.DirentType) FileInfo {
@@ -58,6 +62,41 @@ func NewFileInfo(name string, path string, inode fuseops.InodeID, parent fuseops
 		DirentType:       direntType,
 		Cache:            false,
 		CacheTime:        time.Unix(0, 0),
-		WriteTime:        time.Now(),
+		ContentWriteTime: time.Now(),
 	}
 }
+
+func NewSafeFileInfo(name string, path string, inode fuseops.InodeID, parent fuseops.InodeID, direntType fuseutil.DirentType) FileInfo {
+	return FileInfo{
+		Name:              name,
+		Children:          make([]fuseops.InodeID, 0),
+		ChildrenIndexMap:  make(map[string]int),
+		Parent:            parent,
+		Inode:             inode,
+		Path:              path,
+		DirentType:        direntType,
+		Cache:             false,
+		CacheTime:         time.Unix(0, 0),
+		ContentWriteTime:  time.Now(),
+		MetadataWriteTime: time.Now(),
+		ContentLock:       datastructures.NewCREWResource(),
+		MetadataLock:      datastructures.NewCREWResource(),
+	}
+}
+
+/**
+TODO
+	- implement caching
+		- read/write request
+			- request contains cacheBool and cacheTime
+			- permission granted for read iff cache is invalid
+			- permission granted for write iff cache is valid
+		- read/write ack
+			- send inode in request
+			- return new writecontent time
+	- implement local handles
+	- implement thread safety
+		- metadata updates
+		- content updates
+		- read, write, acks for metadata and content
+*/

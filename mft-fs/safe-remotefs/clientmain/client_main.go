@@ -17,6 +17,7 @@ func main() {
 
 	// reading commandline args
 	mountDirectory := flag.String("mountDirectory", "", "mount directory")
+	cacheDirectory := flag.String("cacheDirectory", "", "cache directory")
 	flag.Parse()
 
 	// setting up gRPC communicators
@@ -29,7 +30,7 @@ func main() {
 	defer conn.Close()
 
 	// setting up FUSE
-	manager, e := client.NewClientManager(conn)
+	manager, e := client.NewClientManager(conn, *cacheDirectory)
 	if e != nil {
 		log.Fatalf("Error: %v\n", e)
 	}

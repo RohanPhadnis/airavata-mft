@@ -19,19 +19,21 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	RemoteFSComms_GetSizeComm_FullMethodName        = "/safe-remotefscomms.RemoteFSComms/GetSizeComm"
-	RemoteFSComms_GetLengthComm_FullMethodName      = "/safe-remotefscomms.RemoteFSComms/GetLengthComm"
-	RemoteFSComms_GetInfoComm_FullMethodName        = "/safe-remotefscomms.RemoteFSComms/GetInfoComm"
-	RemoteFSComms_SetInfoComm_FullMethodName        = "/safe-remotefscomms.RemoteFSComms/SetInfoComm"
-	RemoteFSComms_DeleteComm_FullMethodName         = "/safe-remotefscomms.RemoteFSComms/DeleteComm"
-	RemoteFSComms_MkDirComm_FullMethodName          = "/safe-remotefscomms.RemoteFSComms/MkDirComm"
-	RemoteFSComms_GenerateHandleComm_FullMethodName = "/safe-remotefscomms.RemoteFSComms/GenerateHandleComm"
-	RemoteFSComms_CreateFileComm_FullMethodName     = "/safe-remotefscomms.RemoteFSComms/CreateFileComm"
-	RemoteFSComms_RmDirComm_FullMethodName          = "/safe-remotefscomms.RemoteFSComms/RmDirComm"
-	RemoteFSComms_DeleteHandleComm_FullMethodName   = "/safe-remotefscomms.RemoteFSComms/DeleteHandleComm"
-	RemoteFSComms_SyncFileComm_FullMethodName       = "/safe-remotefscomms.RemoteFSComms/SyncFileComm"
-	RemoteFSComms_WriteAtComm_FullMethodName        = "/safe-remotefscomms.RemoteFSComms/WriteAtComm"
-	RemoteFSComms_ReadAtComm_FullMethodName         = "/safe-remotefscomms.RemoteFSComms/ReadAtComm"
+	RemoteFSComms_GetSizeComm_FullMethodName      = "/safe_remotefscomms.RemoteFSComms/GetSizeComm"
+	RemoteFSComms_GetLengthComm_FullMethodName    = "/safe_remotefscomms.RemoteFSComms/GetLengthComm"
+	RemoteFSComms_GetInfoComm_FullMethodName      = "/safe_remotefscomms.RemoteFSComms/GetInfoComm"
+	RemoteFSComms_SetInfoComm_FullMethodName      = "/safe_remotefscomms.RemoteFSComms/SetInfoComm"
+	RemoteFSComms_DeleteComm_FullMethodName       = "/safe_remotefscomms.RemoteFSComms/DeleteComm"
+	RemoteFSComms_MkDirComm_FullMethodName        = "/safe_remotefscomms.RemoteFSComms/MkDirComm"
+	RemoteFSComms_CreateFileComm_FullMethodName   = "/safe_remotefscomms.RemoteFSComms/CreateFileComm"
+	RemoteFSComms_RmDirComm_FullMethodName        = "/safe_remotefscomms.RemoteFSComms/RmDirComm"
+	RemoteFSComms_SyncFileComm_FullMethodName     = "/safe_remotefscomms.RemoteFSComms/SyncFileComm"
+	RemoteFSComms_WriteAtComm_FullMethodName      = "/safe_remotefscomms.RemoteFSComms/WriteAtComm"
+	RemoteFSComms_ReadAtComm_FullMethodName       = "/safe_remotefscomms.RemoteFSComms/ReadAtComm"
+	RemoteFSComms_RequestReadComm_FullMethodName  = "/safe_remotefscomms.RemoteFSComms/RequestReadComm"
+	RemoteFSComms_RequestWriteComm_FullMethodName = "/safe_remotefscomms.RemoteFSComms/RequestWriteComm"
+	RemoteFSComms_AckReadComm_FullMethodName      = "/safe_remotefscomms.RemoteFSComms/AckReadComm"
+	RemoteFSComms_AckWriteComm_FullMethodName     = "/safe_remotefscomms.RemoteFSComms/AckWriteComm"
 )
 
 // RemoteFSCommsClient is the client API for RemoteFSComms service.
@@ -44,13 +46,15 @@ type RemoteFSCommsClient interface {
 	SetInfoComm(ctx context.Context, in *SetInfoParamsMsg, opts ...grpc.CallOption) (*Empty, error)
 	DeleteComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*Empty, error)
 	MkDirComm(ctx context.Context, in *MkInodeMsg, opts ...grpc.CallOption) (*UintMsg, error)
-	GenerateHandleComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*UintMsg, error)
 	CreateFileComm(ctx context.Context, in *MkInodeMsg, opts ...grpc.CallOption) (*UintMsg, error)
 	RmDirComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*Empty, error)
-	DeleteHandleComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*Empty, error)
 	SyncFileComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*Empty, error)
-	WriteAtComm(ctx context.Context, in *ContentMsg, opts ...grpc.CallOption) (*UintMsg, error)
-	ReadAtComm(ctx context.Context, in *ContentMsg, opts ...grpc.CallOption) (*UintMsg, error)
+	WriteAtComm(ctx context.Context, in *WriteAtMsg, opts ...grpc.CallOption) (*UintMsg, error)
+	ReadAtComm(ctx context.Context, in *ReadAtMsg, opts ...grpc.CallOption) (*ReadAtResponseMsg, error)
+	RequestReadComm(ctx context.Context, in *RequestResourceMsg, opts ...grpc.CallOption) (*RequestResponseMsg, error)
+	RequestWriteComm(ctx context.Context, in *RequestResourceMsg, opts ...grpc.CallOption) (*RequestResponseMsg, error)
+	AckReadComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*AckResponseMsg, error)
+	AckWriteComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*AckResponseMsg, error)
 }
 
 type remoteFSCommsClient struct {
@@ -121,16 +125,6 @@ func (c *remoteFSCommsClient) MkDirComm(ctx context.Context, in *MkInodeMsg, opt
 	return out, nil
 }
 
-func (c *remoteFSCommsClient) GenerateHandleComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*UintMsg, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UintMsg)
-	err := c.cc.Invoke(ctx, RemoteFSComms_GenerateHandleComm_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *remoteFSCommsClient) CreateFileComm(ctx context.Context, in *MkInodeMsg, opts ...grpc.CallOption) (*UintMsg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UintMsg)
@@ -151,16 +145,6 @@ func (c *remoteFSCommsClient) RmDirComm(ctx context.Context, in *UintMsg, opts .
 	return out, nil
 }
 
-func (c *remoteFSCommsClient) DeleteHandleComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, RemoteFSComms_DeleteHandleComm_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *remoteFSCommsClient) SyncFileComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Empty)
@@ -171,7 +155,7 @@ func (c *remoteFSCommsClient) SyncFileComm(ctx context.Context, in *UintMsg, opt
 	return out, nil
 }
 
-func (c *remoteFSCommsClient) WriteAtComm(ctx context.Context, in *ContentMsg, opts ...grpc.CallOption) (*UintMsg, error) {
+func (c *remoteFSCommsClient) WriteAtComm(ctx context.Context, in *WriteAtMsg, opts ...grpc.CallOption) (*UintMsg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UintMsg)
 	err := c.cc.Invoke(ctx, RemoteFSComms_WriteAtComm_FullMethodName, in, out, cOpts...)
@@ -181,10 +165,50 @@ func (c *remoteFSCommsClient) WriteAtComm(ctx context.Context, in *ContentMsg, o
 	return out, nil
 }
 
-func (c *remoteFSCommsClient) ReadAtComm(ctx context.Context, in *ContentMsg, opts ...grpc.CallOption) (*UintMsg, error) {
+func (c *remoteFSCommsClient) ReadAtComm(ctx context.Context, in *ReadAtMsg, opts ...grpc.CallOption) (*ReadAtResponseMsg, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UintMsg)
+	out := new(ReadAtResponseMsg)
 	err := c.cc.Invoke(ctx, RemoteFSComms_ReadAtComm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *remoteFSCommsClient) RequestReadComm(ctx context.Context, in *RequestResourceMsg, opts ...grpc.CallOption) (*RequestResponseMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestResponseMsg)
+	err := c.cc.Invoke(ctx, RemoteFSComms_RequestReadComm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *remoteFSCommsClient) RequestWriteComm(ctx context.Context, in *RequestResourceMsg, opts ...grpc.CallOption) (*RequestResponseMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestResponseMsg)
+	err := c.cc.Invoke(ctx, RemoteFSComms_RequestWriteComm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *remoteFSCommsClient) AckReadComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*AckResponseMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AckResponseMsg)
+	err := c.cc.Invoke(ctx, RemoteFSComms_AckReadComm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *remoteFSCommsClient) AckWriteComm(ctx context.Context, in *UintMsg, opts ...grpc.CallOption) (*AckResponseMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AckResponseMsg)
+	err := c.cc.Invoke(ctx, RemoteFSComms_AckWriteComm_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -201,13 +225,15 @@ type RemoteFSCommsServer interface {
 	SetInfoComm(context.Context, *SetInfoParamsMsg) (*Empty, error)
 	DeleteComm(context.Context, *UintMsg) (*Empty, error)
 	MkDirComm(context.Context, *MkInodeMsg) (*UintMsg, error)
-	GenerateHandleComm(context.Context, *UintMsg) (*UintMsg, error)
 	CreateFileComm(context.Context, *MkInodeMsg) (*UintMsg, error)
 	RmDirComm(context.Context, *UintMsg) (*Empty, error)
-	DeleteHandleComm(context.Context, *UintMsg) (*Empty, error)
 	SyncFileComm(context.Context, *UintMsg) (*Empty, error)
-	WriteAtComm(context.Context, *ContentMsg) (*UintMsg, error)
-	ReadAtComm(context.Context, *ContentMsg) (*UintMsg, error)
+	WriteAtComm(context.Context, *WriteAtMsg) (*UintMsg, error)
+	ReadAtComm(context.Context, *ReadAtMsg) (*ReadAtResponseMsg, error)
+	RequestReadComm(context.Context, *RequestResourceMsg) (*RequestResponseMsg, error)
+	RequestWriteComm(context.Context, *RequestResourceMsg) (*RequestResponseMsg, error)
+	AckReadComm(context.Context, *UintMsg) (*AckResponseMsg, error)
+	AckWriteComm(context.Context, *UintMsg) (*AckResponseMsg, error)
 	mustEmbedUnimplementedRemoteFSCommsServer()
 }
 
@@ -233,26 +259,32 @@ func (UnimplementedRemoteFSCommsServer) DeleteComm(context.Context, *UintMsg) (*
 func (UnimplementedRemoteFSCommsServer) MkDirComm(context.Context, *MkInodeMsg) (*UintMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MkDirComm not implemented")
 }
-func (UnimplementedRemoteFSCommsServer) GenerateHandleComm(context.Context, *UintMsg) (*UintMsg, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GenerateHandleComm not implemented")
-}
 func (UnimplementedRemoteFSCommsServer) CreateFileComm(context.Context, *MkInodeMsg) (*UintMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateFileComm not implemented")
 }
 func (UnimplementedRemoteFSCommsServer) RmDirComm(context.Context, *UintMsg) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RmDirComm not implemented")
 }
-func (UnimplementedRemoteFSCommsServer) DeleteHandleComm(context.Context, *UintMsg) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteHandleComm not implemented")
-}
 func (UnimplementedRemoteFSCommsServer) SyncFileComm(context.Context, *UintMsg) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncFileComm not implemented")
 }
-func (UnimplementedRemoteFSCommsServer) WriteAtComm(context.Context, *ContentMsg) (*UintMsg, error) {
+func (UnimplementedRemoteFSCommsServer) WriteAtComm(context.Context, *WriteAtMsg) (*UintMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteAtComm not implemented")
 }
-func (UnimplementedRemoteFSCommsServer) ReadAtComm(context.Context, *ContentMsg) (*UintMsg, error) {
+func (UnimplementedRemoteFSCommsServer) ReadAtComm(context.Context, *ReadAtMsg) (*ReadAtResponseMsg, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReadAtComm not implemented")
+}
+func (UnimplementedRemoteFSCommsServer) RequestReadComm(context.Context, *RequestResourceMsg) (*RequestResponseMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestReadComm not implemented")
+}
+func (UnimplementedRemoteFSCommsServer) RequestWriteComm(context.Context, *RequestResourceMsg) (*RequestResponseMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestWriteComm not implemented")
+}
+func (UnimplementedRemoteFSCommsServer) AckReadComm(context.Context, *UintMsg) (*AckResponseMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AckReadComm not implemented")
+}
+func (UnimplementedRemoteFSCommsServer) AckWriteComm(context.Context, *UintMsg) (*AckResponseMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AckWriteComm not implemented")
 }
 func (UnimplementedRemoteFSCommsServer) mustEmbedUnimplementedRemoteFSCommsServer() {}
 
@@ -375,24 +407,6 @@ func _RemoteFSComms_MkDirComm_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RemoteFSComms_GenerateHandleComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UintMsg)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RemoteFSCommsServer).GenerateHandleComm(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RemoteFSComms_GenerateHandleComm_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RemoteFSCommsServer).GenerateHandleComm(ctx, req.(*UintMsg))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RemoteFSComms_CreateFileComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MkInodeMsg)
 	if err := dec(in); err != nil {
@@ -429,24 +443,6 @@ func _RemoteFSComms_RmDirComm_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RemoteFSComms_DeleteHandleComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UintMsg)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RemoteFSCommsServer).DeleteHandleComm(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RemoteFSComms_DeleteHandleComm_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RemoteFSCommsServer).DeleteHandleComm(ctx, req.(*UintMsg))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RemoteFSComms_SyncFileComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UintMsg)
 	if err := dec(in); err != nil {
@@ -466,7 +462,7 @@ func _RemoteFSComms_SyncFileComm_Handler(srv interface{}, ctx context.Context, d
 }
 
 func _RemoteFSComms_WriteAtComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ContentMsg)
+	in := new(WriteAtMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -478,13 +474,13 @@ func _RemoteFSComms_WriteAtComm_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: RemoteFSComms_WriteAtComm_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RemoteFSCommsServer).WriteAtComm(ctx, req.(*ContentMsg))
+		return srv.(RemoteFSCommsServer).WriteAtComm(ctx, req.(*WriteAtMsg))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RemoteFSComms_ReadAtComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ContentMsg)
+	in := new(ReadAtMsg)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -496,7 +492,79 @@ func _RemoteFSComms_ReadAtComm_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: RemoteFSComms_ReadAtComm_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RemoteFSCommsServer).ReadAtComm(ctx, req.(*ContentMsg))
+		return srv.(RemoteFSCommsServer).ReadAtComm(ctx, req.(*ReadAtMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RemoteFSComms_RequestReadComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestResourceMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RemoteFSCommsServer).RequestReadComm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RemoteFSComms_RequestReadComm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RemoteFSCommsServer).RequestReadComm(ctx, req.(*RequestResourceMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RemoteFSComms_RequestWriteComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestResourceMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RemoteFSCommsServer).RequestWriteComm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RemoteFSComms_RequestWriteComm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RemoteFSCommsServer).RequestWriteComm(ctx, req.(*RequestResourceMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RemoteFSComms_AckReadComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UintMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RemoteFSCommsServer).AckReadComm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RemoteFSComms_AckReadComm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RemoteFSCommsServer).AckReadComm(ctx, req.(*UintMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RemoteFSComms_AckWriteComm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UintMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RemoteFSCommsServer).AckWriteComm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RemoteFSComms_AckWriteComm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RemoteFSCommsServer).AckWriteComm(ctx, req.(*UintMsg))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -505,7 +573,7 @@ func _RemoteFSComms_ReadAtComm_Handler(srv interface{}, ctx context.Context, dec
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var RemoteFSComms_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "safe-remotefscomms.RemoteFSComms",
+	ServiceName: "safe_remotefscomms.RemoteFSComms",
 	HandlerType: (*RemoteFSCommsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -533,20 +601,12 @@ var RemoteFSComms_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RemoteFSComms_MkDirComm_Handler,
 		},
 		{
-			MethodName: "GenerateHandleComm",
-			Handler:    _RemoteFSComms_GenerateHandleComm_Handler,
-		},
-		{
 			MethodName: "CreateFileComm",
 			Handler:    _RemoteFSComms_CreateFileComm_Handler,
 		},
 		{
 			MethodName: "RmDirComm",
 			Handler:    _RemoteFSComms_RmDirComm_Handler,
-		},
-		{
-			MethodName: "DeleteHandleComm",
-			Handler:    _RemoteFSComms_DeleteHandleComm_Handler,
 		},
 		{
 			MethodName: "SyncFileComm",
@@ -559,6 +619,22 @@ var RemoteFSComms_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReadAtComm",
 			Handler:    _RemoteFSComms_ReadAtComm_Handler,
+		},
+		{
+			MethodName: "RequestReadComm",
+			Handler:    _RemoteFSComms_RequestReadComm_Handler,
+		},
+		{
+			MethodName: "RequestWriteComm",
+			Handler:    _RemoteFSComms_RequestWriteComm_Handler,
+		},
+		{
+			MethodName: "AckReadComm",
+			Handler:    _RemoteFSComms_AckReadComm_Handler,
+		},
+		{
+			MethodName: "AckWriteComm",
+			Handler:    _RemoteFSComms_AckWriteComm_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
