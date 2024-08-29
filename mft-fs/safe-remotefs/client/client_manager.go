@@ -188,7 +188,7 @@ func (manager *ClientManager) WriteAt(inode fuseops.InodeID, data []byte, off in
 	}
 
 	msg := safe_remotefscomms.RequestResourceMsg{
-		CacheTime: timestamppb.New(time.Unix(0, 0)),
+		CacheTime: timestamppb.New(info.cacheTime),
 		Inode:     uint64(inode),
 		Cache:     info.cache,
 	}
@@ -213,6 +213,7 @@ func (manager *ClientManager) WriteAt(inode fuseops.InodeID, data []byte, off in
 			return 0, e
 		}
 
+		manager.localInfo[inode].cache = true
 		manager.localInfo[inode].cacheTime = ackResp.WriteTime.AsTime()
 
 		file, e := os.OpenFile(fmt.Sprintf("%s/file%d.txt", manager.cachePath, int(inode)), os.O_RDWR|os.O_CREATE, 777)
