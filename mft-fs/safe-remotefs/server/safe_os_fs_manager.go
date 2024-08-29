@@ -388,7 +388,7 @@ func (manager *SafeOSFSManager) AckRead(inode fuseops.InodeID) (time.Time, error
 	info.ContentLock.AckRead()
 	info.MetadataLock.RequestRead()
 	output := info.ContentWriteTime
-	info.MetadataLock.RequestRead()
+	info.MetadataLock.AckRead()
 	return output, nil
 }
 
