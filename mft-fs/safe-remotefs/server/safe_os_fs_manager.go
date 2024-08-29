@@ -398,6 +398,7 @@ func (manager *SafeOSFSManager) RequestWrite(inode fuseops.InodeID, cache bool, 
 	info.ContentLock.RequestWrite()
 
 	// cache is valid so grant permission
+	fmt.Printf("%v\t%v\n", info.ContentWriteTime, cacheTime)
 	if cache && (info.ContentWriteTime.Equal(cacheTime) || info.ContentWriteTime.Before(cacheTime)) {
 		return true, nil
 	}
