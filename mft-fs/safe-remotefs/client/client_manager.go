@@ -38,8 +38,9 @@ type ClientManager struct {
 
 func NewClientManager(conn *grpc.ClientConn, cachePath string) (*ClientManager, error) {
 	output := &ClientManager{
-		cachePath: cachePath,
-		localInfo: make(map[fuseops.InodeID]*cacheInfo),
+		cachePath:     cachePath,
+		localInfo:     make(map[fuseops.InodeID]*cacheInfo),
+		handleToInode: make(map[fuseops.HandleID]fuseops.InodeID),
 	}
 	output.client = safe_remotefscomms.NewRemoteFSCommsClient(conn)
 	return output, nil
