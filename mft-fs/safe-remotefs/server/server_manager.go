@@ -49,7 +49,9 @@ func (server *Server) GetInfoComm(ctx context.Context, in *safe_remotefscomms.Ui
 	output := &safe_remotefscomms.FileInfoMsg{
 		ChildrenIndexMap: make(map[string]uint32),
 	}
+	info.MetadataLock.RequestRead()
 	safe_remotefscomms.ConvertToComm(info, output)
+	info.MetadataLock.AckRead()
 	return output, nil
 }
 
