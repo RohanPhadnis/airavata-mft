@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/jacobsa/fuse/fuseops"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"mft-fs/safe-remotefs/safe-remotefscomms"
@@ -22,6 +23,7 @@ func NewServerHandler(root string) *Server {
 }
 
 func (server *Server) GetSizeComm(ctx context.Context, in *safe_remotefscomms.Empty) (*safe_remotefscomms.UintMsg, error) {
+	fmt.Println("GetSizeComm")
 	size, e := server.manager.GetSize()
 	if e != nil {
 		return nil, e
@@ -30,6 +32,7 @@ func (server *Server) GetSizeComm(ctx context.Context, in *safe_remotefscomms.Em
 }
 
 func (server *Server) GetLengthComm(ctx context.Context, in *safe_remotefscomms.Empty) (*safe_remotefscomms.UintMsg, error) {
+	fmt.Println("GetLengthComm")
 	length, e := server.manager.GetLength()
 	if e != nil {
 		return nil, e
@@ -38,6 +41,7 @@ func (server *Server) GetLengthComm(ctx context.Context, in *safe_remotefscomms.
 }
 
 func (server *Server) GetInfoComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.FileInfoMsg, error) {
+	fmt.Println("GetInfoComm")
 	info, e := server.manager.GetInfo(fuseops.InodeID(in.Data))
 	if e != nil {
 		return nil, e
@@ -50,6 +54,7 @@ func (server *Server) GetInfoComm(ctx context.Context, in *safe_remotefscomms.Ui
 }
 
 func (server *Server) SetInfoComm(ctx context.Context, in *safe_remotefscomms.SetInfoParamsMsg) (*safe_remotefscomms.Empty, error) {
+	fmt.Println("SetInfoComm")
 	var uidptr *uint32
 	var gidptr *uint32
 	var sizeptr *uint64
@@ -100,6 +105,7 @@ func (server *Server) SetInfoComm(ctx context.Context, in *safe_remotefscomms.Se
 }
 
 func (server *Server) DeleteComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.Empty, error) {
+	fmt.Println("DeleteComm")
 	e := server.manager.Delete(fuseops.InodeID(in.Data))
 	if e != nil {
 		return nil, e
@@ -108,6 +114,7 @@ func (server *Server) DeleteComm(ctx context.Context, in *safe_remotefscomms.Uin
 }
 
 func (server *Server) MkDirComm(ctx context.Context, in *safe_remotefscomms.MkInodeMsg) (*safe_remotefscomms.UintMsg, error) {
+	fmt.Println("MkDirComm")
 	inode, e := server.manager.MkDir(fuseops.InodeID(in.Parent), in.Name, os.FileMode(in.Mode))
 	if e != nil {
 		return nil, e
@@ -116,6 +123,7 @@ func (server *Server) MkDirComm(ctx context.Context, in *safe_remotefscomms.MkIn
 }
 
 func (server *Server) CreateFileComm(ctx context.Context, in *safe_remotefscomms.MkInodeMsg) (*safe_remotefscomms.UintMsg, error) {
+	fmt.Println("CreateFileComm")
 	inode, e := server.manager.CreateFile(fuseops.InodeID(in.Parent), in.Name, os.FileMode(in.Mode))
 	if e != nil {
 		return nil, e
@@ -124,6 +132,7 @@ func (server *Server) CreateFileComm(ctx context.Context, in *safe_remotefscomms
 }
 
 func (server *Server) RmDirComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.Empty, error) {
+	fmt.Println("RmDirComm")
 	e := server.manager.RmDir(fuseops.InodeID(in.Data))
 	if e != nil {
 		return nil, e
@@ -132,6 +141,7 @@ func (server *Server) RmDirComm(ctx context.Context, in *safe_remotefscomms.Uint
 }
 
 func (server *Server) SyncFileComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.Empty, error) {
+	fmt.Println("SyncFileComm")
 	e := server.manager.SyncFile(fuseops.InodeID(in.Data))
 	if e != nil {
 		return nil, e
@@ -140,11 +150,13 @@ func (server *Server) SyncFileComm(ctx context.Context, in *safe_remotefscomms.U
 }
 
 func (server *Server) WriteAtComm(ctx context.Context, in *safe_remotefscomms.WriteAtMsg) (*safe_remotefscomms.UintMsg, error) {
+	fmt.Println("WriteAtComm")
 	n, _ := server.manager.WriteAt(fuseops.InodeID(in.Inode), in.Data, in.Off)
 	return &safe_remotefscomms.UintMsg{Data: uint64(n)}, nil
 }
 
 func (server *Server) ReadAtComm(ctx context.Context, in *safe_remotefscomms.ReadAtMsg) (*safe_remotefscomms.ReadAtResponseMsg, error) {
+	fmt.Println("ReadAtComm")
 	data := make([]byte, in.Size)
 	n, _ := server.manager.ReadAt(fuseops.InodeID(in.Inode), data, in.Off)
 	return &safe_remotefscomms.ReadAtResponseMsg{
@@ -154,6 +166,7 @@ func (server *Server) ReadAtComm(ctx context.Context, in *safe_remotefscomms.Rea
 }
 
 func (server *Server) RequestReadComm(ctx context.Context, in *safe_remotefscomms.RequestResourceMsg) (*safe_remotefscomms.RequestResponseMsg, error) {
+	fmt.Println("RequestReadComm")
 	success, e := server.manager.RequestRead(fuseops.InodeID(in.Inode), in.Cache, in.CacheTime.AsTime())
 	if e != nil {
 		return nil, e
@@ -162,6 +175,7 @@ func (server *Server) RequestReadComm(ctx context.Context, in *safe_remotefscomm
 }
 
 func (server *Server) RequestWriteComm(ctx context.Context, in *safe_remotefscomms.RequestResourceMsg) (*safe_remotefscomms.RequestResponseMsg, error) {
+	fmt.Println("RequestWriteComm")
 	success, e := server.manager.RequestWrite(fuseops.InodeID(in.Inode), in.Cache, in.CacheTime.AsTime())
 	if e != nil {
 		return nil, e
@@ -170,6 +184,7 @@ func (server *Server) RequestWriteComm(ctx context.Context, in *safe_remotefscom
 }
 
 func (server *Server) AckReadComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.AckResponseMsg, error) {
+	fmt.Println("AckReadComm")
 	timestamp, e := server.manager.AckRead(fuseops.InodeID(in.Data))
 	if e != nil {
 		return nil, e
@@ -178,6 +193,7 @@ func (server *Server) AckReadComm(ctx context.Context, in *safe_remotefscomms.Ui
 }
 
 func (server *Server) AckWriteComm(ctx context.Context, in *safe_remotefscomms.UintMsg) (*safe_remotefscomms.AckResponseMsg, error) {
+	fmt.Println("AckWriteComm")
 	timestamp, e := server.manager.AckWrite(fuseops.InodeID(in.Data))
 	if e != nil {
 		return nil, e
