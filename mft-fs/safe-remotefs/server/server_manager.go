@@ -50,29 +50,41 @@ func (server *Server) GetInfoComm(ctx context.Context, in *safe_remotefscomms.Ui
 }
 
 func (server *Server) SetInfoComm(ctx context.Context, in *safe_remotefscomms.SetInfoParamsMsg) (*safe_remotefscomms.Empty, error) {
-	var uidptr *uint32 = nil
-	var gidptr *uint32 = nil
-	var sizeptr *uint64 = nil
-	var modeptr *os.FileMode = nil
-	var atimeptr *time.Time = nil
-	var mtimeptr *time.Time = nil
+	var uidptr *uint32
+	var gidptr *uint32
+	var sizeptr *uint64
+	var modeptr *os.FileMode
+	var atimeptr *time.Time
+	var mtimeptr *time.Time
 	if in.Uid != -1 {
 		*uidptr = uint32(in.Uid)
+	} else {
+		uidptr = nil
 	}
 	if in.Gid != -1 {
 		*gidptr = uint32(in.Gid)
+	} else {
+		gidptr = nil
 	}
 	if in.Mode != -1 {
 		*modeptr = os.FileMode(in.Mode)
+	} else {
+		modeptr = nil
 	}
 	if in.Size != -1 {
 		*sizeptr = uint64(in.Size)
+	} else {
+		sizeptr = nil
 	}
 	if !in.Atime.AsTime().Equal(time.Time{}) {
 		*atimeptr = in.Atime.AsTime()
+	} else {
+		atimeptr = nil
 	}
 	if !in.Mtime.AsTime().Equal(time.Time{}) {
 		*mtimeptr = in.Mtime.AsTime()
+	} else {
+		mtimeptr = nil
 	}
 	e := server.manager.SetInfo(fuseops.InodeID(in.Inode), uidptr, gidptr, sizeptr, modeptr, atimeptr, mtimeptr)
 	if e != nil {
