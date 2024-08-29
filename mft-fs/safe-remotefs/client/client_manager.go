@@ -184,6 +184,7 @@ func (manager *ClientManager) WriteAt(inode fuseops.InodeID, data []byte, off in
 
 	info, ok := manager.localInfo[inode]
 	if !ok {
+		fmt.Println("cache map issue")
 		return 0, errors.New("local cache not updated")
 	}
 
@@ -228,6 +229,7 @@ func (manager *ClientManager) WriteAt(inode fuseops.InodeID, data []byte, off in
 		return int(resp.Data), nil
 	}
 
+	fmt.Println("cache timing issue")
 	return 0, errors.New("local cache not updated")
 }
 func (manager *ClientManager) ReadAt(inode fuseops.InodeID, data []byte, off int64) (n int, err error) {

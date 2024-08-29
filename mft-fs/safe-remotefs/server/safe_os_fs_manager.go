@@ -186,12 +186,9 @@ func (manager *SafeOSFSManager) SetInfo(inode fuseops.InodeID, uidptr *uint32, g
 		return e
 	}
 
-	fmt.Println("requesting metadata lock write")
 	info.MetadataLock.RequestWrite()
-	fmt.Println("in critical section")
 	e = manager.updateInfo(info)
 	info.MetadataLock.AckWrite()
-	fmt.Println("acking metadata lock write")
 
 	return e
 }
