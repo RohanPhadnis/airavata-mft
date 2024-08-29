@@ -57,32 +57,38 @@ func (server *Server) SetInfoComm(ctx context.Context, in *safe_remotefscomms.Se
 	var atimeptr *time.Time
 	var mtimeptr *time.Time
 	if in.Uid != -1 {
-		*uidptr = uint32(in.Uid)
+		var temp uint32 = uint32(in.Uid)
+		uidptr = &temp
 	} else {
 		uidptr = nil
 	}
 	if in.Gid != -1 {
-		*gidptr = uint32(in.Gid)
+		var temp uint32 = uint32(in.Uid)
+		gidptr = &temp
 	} else {
 		gidptr = nil
 	}
 	if in.Mode != -1 {
-		*modeptr = os.FileMode(in.Mode)
+		var temp os.FileMode = os.FileMode(in.Mode)
+		modeptr = &temp
 	} else {
 		modeptr = nil
 	}
 	if in.Size != -1 {
-		*sizeptr = uint64(in.Size)
+		var temp uint64 = uint64(in.Size)
+		sizeptr = &temp
 	} else {
 		sizeptr = nil
 	}
 	if !in.Atime.AsTime().Equal(time.Time{}) {
-		*atimeptr = in.Atime.AsTime()
+		var temp time.Time = in.Atime.AsTime()
+		atimeptr = &temp
 	} else {
 		atimeptr = nil
 	}
 	if !in.Mtime.AsTime().Equal(time.Time{}) {
-		*mtimeptr = in.Mtime.AsTime()
+		var temp time.Time = in.Mtime.AsTime()
+		mtimeptr = &temp
 	} else {
 		mtimeptr = nil
 	}
