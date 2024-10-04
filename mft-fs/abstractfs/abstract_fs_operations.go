@@ -1,3 +1,9 @@
+/*
+Package abstractfs
+abstractfs is a FUSE-based filesystem wrapper
+it defines an interface for a filesystem manager, which can be implemented by any filesystem
+it implements FUSE operations which calls the respective methods of the filesystems
+*/
 package abstractfs
 
 import (

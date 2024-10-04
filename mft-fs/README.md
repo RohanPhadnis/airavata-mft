@@ -4,6 +4,38 @@
 
 MFT-FS is a FUSE-based extension to Airavata MFT. It provides the abstraction that unifies the different file I/O protocols into one filesystem.
 
+<strong>The Problem:</strong>
+<img src="images/problem.png">
+
+<br>
+
+<strong>The Solution:</strong>
+<img src="images/solution.png">
+
+<hr>
+
+<h3>Operating System Filesystem (OSFS)</h3>
+
+This was more of a learning/testing implementation. It creates a filesystem mount which provides implementations for each fileystem method. However, the implementation has identical behavior to the native filesystem of the computer. It is merely a filesystem that mimics the operating system's filesystem.
+
+<hr>
+
+<h3>Remote Filesystem (RemoteFS)</h3>
+
+<img src="images/single_client.png">
+
+This filesystem uses gRPC to exchange data between a client and a server. In this filesystem, the client has the FUSE mount running. The client's FUSE mount invokes FUSE operations remotely, using gRPC. Thus, all of the operations performed on the client will modify the server's operating system.
+
+Note: RemoteFS is NOT threadsafe. Multiple clients reading and writing concurrently can cause race conditions and inconsistency.
+
+<hr>
+
+<h3>Safe Remote Filesystem (SafeRemoteFS)</h3>
+
+<img src="images/many_clients.png">
+
+This filesystem adds the safety layers on top of the remote filesystem. It uses a Concurrent Reads, Exclusive Writes (CREW) model. Prior to reading/writing a file, the client must request to read/write. This is a blocking operation. The server only grants access to the client when there are no writers. If a client is reading/writing, it is guaranteed that no other client can write at the same time. After a client is done reading/writing, it must send an acknowledgement.
+
 <hr>
 
 <h3>Instructions for RemoteFS</h3>
