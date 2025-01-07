@@ -20,6 +20,13 @@ type cacheInfo struct {
 	handle    fuseops.HandleID
 }
 
+func minimum(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func newCacheInfo() *cacheInfo {
 	return &cacheInfo{
 		cache:     false,
@@ -268,7 +275,7 @@ func (manager *ClientManager) ReadAt(inode fuseops.InodeID, data []byte, off int
 		}
 		manager.localInfo[inode].cacheTime = ackResp.WriteTime.AsTime()
 		manager.localInfo[inode].cache = true
-		for i := 0; i < min(len(data), len(resp.Data)); i++ {
+		for i := 0; i < minimum(len(data), len(resp.Data)); i++ {
 			data[i] = resp.Data[i]
 		}
 		file, e := os.OpenFile(fmt.Sprintf("%s/file%d.txt", manager.cachePath, int(inode)), os.O_RDWR|os.O_CREATE, 777)
