@@ -45,12 +45,67 @@ func expireTime() time.Time {
 }
 
 type AbstractFS struct {
-	fuseutil.NotImplementedFileSystem
+	// fuseutil.NotImplementedFileSystem
 	Manager  FSManager
 	MountDir string
 
 	Cachable bool
 	CacheDir string
+}
+
+func (fs AbstractFS) MkNode(ctx context.Context, op *fuseops.MkNodeOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) CreateLink(ctx context.Context, op *fuseops.CreateLinkOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) CreateSymlink(ctx context.Context, op *fuseops.CreateSymlinkOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) Rename(ctx context.Context, op *fuseops.RenameOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) Unlink(ctx context.Context, op *fuseops.UnlinkOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) ReadSymlink(ctx context.Context, op *fuseops.ReadSymlinkOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) RemoveXattr(ctx context.Context, op *fuseops.RemoveXattrOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) GetXattr(ctx context.Context, op *fuseops.GetXattrOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) ListXattr(ctx context.Context, op *fuseops.ListXattrOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) SetXattr(ctx context.Context, op *fuseops.SetXattrOp) error {
+	printer("MkNode")
+	return nil
+}
+
+func (fs AbstractFS) Fallocate(ctx context.Context, op *fuseops.FallocateOp) error {
+	printer("MkNode")
+	return nil
 }
 
 // private helpers
