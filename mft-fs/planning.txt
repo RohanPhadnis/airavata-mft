@@ -8,6 +8,24 @@ AbstractFS attributes:
         - username, password, key for sftp-fs
 
 
+
+.mftfs
+    cache/
+        fs0/
+            file_<inode_number>.data
+        fs1/
+        ...
+        fsn/
+    info.json
+        path to id mapping
+        id to data
+            id
+            path
+            type (s3fs, osfs, sftpfs, etc)
+            config (type dependent)
+
+
+
 func (fs AbstractFS) StatFS(ctx context.Context, op *fuseops.StatFSOp) error
      - returns general information about the FS like remaining space, inode capacity, etc
      - implement GetSize(), GetLength() for each FS

@@ -44,7 +44,7 @@ func main() {
 		},
 	}
 
-	privateBytes, err := os.ReadFile("go_server/host_key")
+	privateBytes, err := os.ReadFile("./host_key")
 	if err != nil {
 		log.Fatal("Failed to load private key", err)
 	}

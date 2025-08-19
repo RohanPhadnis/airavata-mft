@@ -10,10 +10,6 @@ import (
 	"mft-fs/datastructures"
 )
 
-type FileSystem interface {
-	fuseutil.FileSystem
-}
-
 /*
 FSManager Interface
 the FSManager interface can be implemented by any custom filesystem
@@ -160,7 +156,7 @@ type FSManager interface {
 		returns:
 			error: any error caused by the invocation
 	*/
-	Destroy() error
+	// Destroy() error
 }
 
 /*

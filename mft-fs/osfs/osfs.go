@@ -16,9 +16,17 @@ import (
 	"mft-fs/datastructures"
 )
 
-func NewOSFS(mountDir string, rootDir string) *abstractfs.AbstractFS {
+type Config struct {
+	RootDir string
+}
+
+func NewOSFS(mountDir string, config *Config) *abstractfs.AbstractFS {
+	if config == nil {
+		fmt.Println("config is nil")
+		return nil
+	}
 	return &abstractfs.AbstractFS{
-		Manager:  NewOSFSManager(rootDir),
+		Manager:  NewOSFSManager(config.RootDir),
 		MountDir: mountDir,
 		Cachable: false,
 		CacheDir: "",
@@ -332,4 +340,4 @@ func (manager *OSFSManager) WriteAt(inode fuseops.InodeID, data []byte, off int6
 	return n, e
 }
 
-func (manager *OSFSManager) Destroy() error { return nil }
+// func (manager *OSFSManager) Destroy() error { return nil }

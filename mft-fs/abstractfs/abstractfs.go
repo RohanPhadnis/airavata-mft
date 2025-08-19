@@ -439,6 +439,6 @@ func (fs AbstractFS) ReleaseFileHandle(ctx context.Context, op *fuseops.ReleaseF
 
 func (fs AbstractFS) Destroy() {
 	printer("Destroy")
-	fs.Manager.Destroy()
+	fs.Manager.Teardown()
 	fuse.Unmount("./mount")
 }

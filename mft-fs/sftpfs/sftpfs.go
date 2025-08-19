@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/jacobsa/fuse"
@@ -21,13 +20,15 @@ import (
 	"mft-fs/datastructures"
 )
 
-type sftpClientConfig struct {
-	Host           string
-	Port           int
-	Username       string
-	Password       string
-	PrivateKeyPath string
-	RemoteRoot     string
+// todo: make generated inode persistent
+
+type SftpClientConfig struct {
+	Host     string
+	Port     uint16
+	Username string
+	Password string
+	// PrivateKeyPath string
+	RemoteRoot string
 }
 
 type sftpFSManager struct {
@@ -35,14 +36,16 @@ type sftpFSManager struct {
 
 	client *sftp.Client
 	conn   *ssh.Client
-	config *sftpClientConfig
+	config *SftpClientConfig
 
-	mutex  *sync.Mutex
-	data   map[fuseops.InodeID]*abstractfs.FileInfo
-	length uint64
+	mutex        *sync.Mutex
+	data         map[fuseops.InodeID]*abstractfs.FileInfo
+	pathToInode  map[string]fuseops.InodeID
+	length       uint64
+	inodeCounter fuseops.InodeID
 }
 
-func NewSFTPFS(mountDir string, config *sftpClientConfig) *abstractfs.AbstractFS {
+func NewSFTPFS(mountDir string, config *SftpClientConfig) *abstractfs.AbstractFS {
 	return &abstractfs.AbstractFS{
 		Manager:  newSftpFsManager(config),
 		MountDir: mountDir,
@@ -51,12 +54,18 @@ func NewSFTPFS(mountDir string, config *sftpClientConfig) *abstractfs.AbstractFS
 	}
 }
 
-func newSftpFsManager(config *sftpClientConfig) *sftpFSManager {
+func newSftpFsManager(config *SftpClientConfig) *sftpFSManager {
+	if config == nil {
+		fmt.Println("config is nil")
+		return nil
+	}
 	return &sftpFSManager{
-		config: config,
-		mutex:  &sync.Mutex{},
-		data:   make(map[fuseops.InodeID]*abstractfs.FileInfo),
-		length: 1,
+		config:       config,
+		mutex:        &sync.Mutex{},
+		data:         make(map[fuseops.InodeID]*abstractfs.FileInfo),
+		length:       1,
+		inodeCounter: 1,
+		pathToInode:  make(map[string]fuseops.InodeID),
 	}
 }
 
@@ -65,7 +74,7 @@ type parentChildPair struct {
 	child  string
 }
 
-func writeFileInfo(stat *os.FileInfo, statSys *syscall.Stat_t, info *abstractfs.FileInfo) {
+func writeFileInfo(stat *os.FileInfo, statSys *sftp.FileStat, info *abstractfs.FileInfo) {
 
 	// general metadata
 	info.Size = uint64(statSys.Size)
@@ -79,15 +88,21 @@ func writeFileInfo(stat *os.FileInfo, statSys *syscall.Stat_t, info *abstractfs.
 
 	// permissions metadata
 	info.Mode = os.FileMode(statSys.Mode)
-	info.Uid = statSys.Uid
-	info.Gid = statSys.Gid
+	info.Uid = statSys.UID
+	info.Gid = statSys.GID
 
 	// timing metadata
-	info.Atime = time.Unix(statSys.Atimespec.Sec, statSys.Atimespec.Nsec)
-	info.Mtime = time.Unix(statSys.Mtimespec.Sec, statSys.Mtimespec.Nsec)
-	info.Ctime = time.Unix(statSys.Ctimespec.Sec, statSys.Ctimespec.Nsec)
-	info.Crtime = time.Unix(statSys.Birthtimespec.Sec, statSys.Birthtimespec.Nsec)
+	info.Atime = statSys.AccessTime()
+	info.Mtime = statSys.ModTime()
+	// info.Ctime = time.Unix(statSys.Ctimespec.Sec, statSys.Ctimespec.Nsec)
+	// info.Crtime = time.Unix(statSys.Birthtimespec.Sec, statSys.Birthtimespec.Nsec)
 
+}
+
+func (manager *sftpFSManager) generateInode() fuseops.InodeID {
+	output := manager.inodeCounter
+	manager.inodeCounter++
+	return output
 }
 
 func (manager *sftpFSManager) bfs() error {
@@ -100,26 +115,41 @@ func (manager *sftpFSManager) bfs() error {
 	manager.length = 0
 	for !fringe.IsEmpty() {
 		current = fringe.Dequeue().(*parentChildPair)
-		p := path.Join(manager.data[current.parent].Path, current.child)
+		var p string
+		if current.parent == 0 {
+			p = manager.config.RemoteRoot
+		} else {
+			p = path.Join(manager.data[current.parent].Path, current.child)
+		}
 
 		// get the current path
 		stat, e := manager.client.Stat(p)
 		if e != nil {
 			return e
 		}
+		statSys := stat.Sys().(*sftp.FileStat)
+
+		// variable declaration
+		var inode fuseops.InodeID
+		var info *abstractfs.FileInfo
+		var ok bool
 
 		// get the inode
-		statSys := stat.Sys().(*syscall.Stat_t)
-		inode := fuseops.InodeID(statSys.Ino)
+		inode, ok = manager.pathToInode[p]
+		if !ok {
+			inode = manager.generateInode()
+		}
 
 		// get info object; create if does not exist
-		var info *abstractfs.FileInfo
-		info, ok := manager.data[inode]
+		info, ok = manager.data[inode]
 		if !ok {
 			i := abstractfs.NewFileInfo(current.child, p, inode, current.parent, fuseutil.DT_Unknown)
 			info = &i
 			manager.data[inode] = info
-			manager.data[current.parent].AddChild(current.child, inode)
+			manager.pathToInode[p] = inode
+			if current.parent != 0 {
+				manager.data[current.parent].AddChild(current.child, inode)
+			}
 		}
 
 		writeFileInfo(&stat, statSys, info)
@@ -253,7 +283,7 @@ func (manager *sftpFSManager) GetInfo(id fuseops.InodeID) (*abstractfs.FileInfo,
 		}
 	}
 
-	writeFileInfo(&stat, stat.Sys().(*syscall.Stat_t), info)
+	writeFileInfo(&stat, stat.Sys().(*sftp.FileStat), info)
 
 	return info, nil
 }
@@ -363,11 +393,12 @@ func (manager *sftpFSManager) MkDir(parent fuseops.InodeID, name string, mode os
 	if e != nil {
 		return 0, e
 	}
-	statSys := stat.Sys().(*syscall.Stat_t)
-	inode := fuseops.InodeID(statSys.Ino)
+	statSys := stat.Sys().(*sftp.FileStat)
+	inode := manager.generateInode()
 	i := abstractfs.NewFileInfo(name, p, inode, parent, fuseutil.DT_Unknown)
 	info = &i
 	manager.data[inode] = info
+	manager.pathToInode[p] = inode
 	manager.data[parent].AddChild(name, inode)
 	writeFileInfo(&stat, statSys, info)
 	return inode, nil
@@ -406,11 +437,12 @@ func (manager *sftpFSManager) CreateFile(parent fuseops.InodeID, name string, mo
 	if e != nil {
 		return 0, e
 	}
-	statSys := stat.Sys().(*syscall.Stat_t)
-	inode := fuseops.InodeID(statSys.Ino)
+	statSys := stat.Sys().(*sftp.FileStat)
+	inode := manager.generateInode()
 	i := abstractfs.NewFileInfo(name, p, inode, parent, fuseutil.DT_Unknown)
 	info = &i
 	manager.data[inode] = info
+	manager.pathToInode[p] = inode
 	manager.data[parent].AddChild(name, inode)
 	writeFileInfo(&stat, statSys, info)
 	return inode, nil
@@ -505,6 +537,6 @@ func (manager *sftpFSManager) ReadAt(inode fuseops.InodeID, data []byte, off int
 	return n, nil
 }
 
-func (manager *sftpFSManager) Destroy() error {
-	return nil
-}
+//func (manager *sftpFSManager) Destroy() error {
+//	return nil
+//}
