@@ -107,6 +107,7 @@ func (manager *sftpFSManager) generateInode() fuseops.InodeID {
 
 func (manager *sftpFSManager) bfs() error {
 	fringe := datastructures.NewQueue()
+
 	fringe.Enqueue(&parentChildPair{
 		parent: 0,
 		child:  manager.config.RemoteRoot,
@@ -153,6 +154,19 @@ func (manager *sftpFSManager) bfs() error {
 		}
 
 		writeFileInfo(&stat, statSys, info)
+
+		if info.DirentType == fuseutil.DT_Directory {
+			dir, err := manager.client.ReadDir(info.Path)
+			if err != nil {
+				return err
+			}
+			for _, d := range dir {
+				fringe.Enqueue(&parentChildPair{
+					parent: info.Inode,
+					child:  d.Name(),
+				})
+			}
+		}
 
 		manager.length++
 	}
@@ -221,6 +235,7 @@ func (manager *sftpFSManager) GetSize() (uint64, error) {
 		return 0, fmt.Errorf("SFTP client is not initialized")
 	}
 
+	return 0, nil
 	stat, e := manager.client.Stat(manager.config.RemoteRoot)
 	if e != nil {
 		return 0, e
